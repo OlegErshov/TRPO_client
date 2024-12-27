@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { generateQRCode } from '../api';
+import { jwtDecode } from "jwt-decode";
 
 const GenerateQR = () => {
   const [link, setLink] = useState('');
@@ -9,11 +10,19 @@ const GenerateQR = () => {
 
   const handleGenerate = async (e) => {
     e.preventDefault();
-    setQrCodeImage(null); // Reset QR code before generating a new one
+    setQrCodeImage(null); // Reset QR code before generating a new on
     setError(''); // Reset any previous error
   
     try {
-      const qrCodeBlob = await generateQRCode(link, 'user', token); // Получаем Blob с изображением
+      let username = 'user'; // Default value if no token is found
+
+    // Если токен есть, декодируем его и получаем значение 'sub'
+      if (token) {
+        const decodedToken = jwtDecode(token);
+        username = decodedToken.sub; // Извлекаем 'sub' из payload токена
+      }
+
+      const qrCodeBlob = await generateQRCode(link, username, token); // Получаем Blob с изображением
 
       // Создаем объект URL для отображения изображения
       const qrCodeImageUrl = URL.createObjectURL(qrCodeBlob);
