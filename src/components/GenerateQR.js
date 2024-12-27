@@ -1,21 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generateQRCode } from '../api';
 
 const GenerateQR = () => {
   const [link, setLink] = useState('');
-  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [qrCodeImage, setQrCodeImage] = useState(null);
   const [error, setError] = useState('');
   const token = localStorage.getItem('token');
 
   const handleGenerate = async (e) => {
     e.preventDefault();
+    setQrCodeImage(null); // Reset QR code before generating a new one
+    setError(''); // Reset any previous error
+  
     try {
-      const data = await generateQRCode(link, 'user', token);
-      setQrCodeUrl(data['QR-Code-URL']);
+      const qrCodeBlob = await generateQRCode(link, 'user', token); // Получаем Blob с изображением
+
+      // Создаем объект URL для отображения изображения
+      const qrCodeImageUrl = URL.createObjectURL(qrCodeBlob);
+      console.log('Generated QR code URL:', qrCodeImageUrl); // Добавьте лог
+      setQrCodeImage(qrCodeImageUrl); // Устанавливаем ссылку для изображения
     } catch (err) {
       setError('Error generating QR code');
     }
   };
+
+  // Очистка URL, когда компонент размонтируется или QR-код изменится
+  useEffect(() => {
+    return () => {
+      if (qrCodeImage) {
+        URL.revokeObjectURL(qrCodeImage); // Очистка объекта URL
+      }
+    };
+  }, [qrCodeImage]);
 
   return (
     <div className="generate-qr-container">
@@ -31,11 +47,15 @@ const GenerateQR = () => {
           />
           <button type="submit" className="button">Generate</button>
         </form>
-        {qrCodeUrl && (
+        
+        {/* Display QR code if it exists */}
+        {qrCodeImage && (
           <div className="qr-code-wrapper">
-            <img src={qrCodeUrl} alt="QR Code" className="qr-code" />
+            <img src={qrCodeImage} alt="QR Code" className="qr-code" />
           </div>
         )}
+        
+        {/* Display error message if any */}
         {error && <p className="error">{error}</p>}
       </div>
 
@@ -92,9 +112,10 @@ const GenerateQR = () => {
         }
 
         .qr-code {
-          width: 200px;
-          height: 200px;
-          margin-top: 10px;
+          max-width: 100%;
+          height: auto;
+          display: block;
+          margin: 0 auto;
         }
 
         .error {
